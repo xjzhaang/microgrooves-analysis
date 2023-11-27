@@ -3,7 +3,7 @@ from pathlib import Path
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-from skimage import io
+from skimage import io, util
 from cellpose import models as cellpose_models
 from tqdm import tqdm
 
@@ -31,9 +31,10 @@ def inference_loop(dataloader, model):
         for batch, data in tqdm(enumerate(dataloader), total=len(dataloader)):
             image = data['image'].numpy()
             pred_mask, _, _ = model.eval(image, channels=[0,0], diameter=49.03, normalize=True, net_avg=False)
-            image_uint8 = (np.squeeze(image) * 255).astype(np.uint16)
-            grooves_uint8 = np.squeeze(data['first_channel'].numpy()).astype(np.uint16)
-            reconstructed_volume.append(np.stack([grooves_uint8, image_uint8, pred_mask], axis=0))
+            image_uint8 = util.img_as_ubyte(np.squeeze(image))
+            grooves_uint8 = util.img_as_ubyte(np.squeeze(data['first_channel'].numpy()))
+            pred_mask_uint8 = util.img_as_ubyte(pred_mask)
+            reconstructed_volume.append(np.stack([grooves_uint8, image_uint8, pred_mask_uint8], axis=0))
 
     # Stack the masks along a new dimension to get the 3D volume
     reconstructed_volume = np.stack(reconstructed_volume, axis=0)
