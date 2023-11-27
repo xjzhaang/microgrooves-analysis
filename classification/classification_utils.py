@@ -117,7 +117,7 @@ def find_caged_nucleus(dataframe, video):
         for index, row in frame_0_data.iterrows():
             coords = row["coords"]
             values_at_coords = video[frame_id, 0][coords[:, 0], coords[:, 1]]
-            on_grooves = np.mean(values_at_coords == 1) >= 0.45
+            on_grooves = np.mean(values_at_coords == 255) >= 0.45
             conditions = (row["minor_axis_length"] <= 27 and
                           np.abs(row["orientation"]) >= 1.47 and
                           row["extent"] >= 0.73 and

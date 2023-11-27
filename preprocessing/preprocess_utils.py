@@ -59,7 +59,7 @@ def angle_from_orientation(orientation):
         if orientation >= 45:
             angle = 90 - orientation
         else:
-            angle = orientation + 90
+            angle = -orientation + 90
     elif 90 <= orientation < 180:
         if orientation >= 135:
             angle = 270 - orientation

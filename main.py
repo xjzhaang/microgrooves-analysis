@@ -58,7 +58,8 @@ def main():
     args = parser.parse_args()
 
     if args.d is None:
-        directories = [ '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J1 6h culture',
+        directories = [
+                        '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J1 6h culture',
                         '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J2 24h culture',
                         '../data/200121 hoechst',
                         '../data/191219 HOECHST 3D 5-5',

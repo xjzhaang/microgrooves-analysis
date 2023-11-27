@@ -25,7 +25,7 @@ If you're new to the project, consider following these steps to get started:
    conda activate microgroove-movies
    conda install --file requirements.txt
    ```
-   Or if you want to go the slow way:
+   Using pip:
    ```bash
    # Using venv (built-in module in Python 3.3 and newer)
    python3.11 -m venv microgroove-movies 
@@ -34,3 +34,8 @@ If you're new to the project, consider following these steps to get started:
    pip install -r requirements.txt
    ```
    **If your device has a CUDA enabled GPU**: it is recommended to install Pytorch and CUDA from https://pytorch.org/get-started/locally/
+
+
+## Usage
+
+To be written...
