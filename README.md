@@ -1,5 +1,3 @@
-markdown
-
 # Microgroove Movie Analysis
 
 This repository contains code and resources for the analysis of microgroove movies, organized into three main folders: `preprocessing`, `segmentation`, and `classification`.

@@ -1,7 +1,7 @@
 import numpy as np
 
 import torch
-from skimage import io
+from skimage import io, util
 from monai.networks.nets import UNet
 
 from preprocessing.preprocess_utils import (per_channel_scaling, apply_clahe, apply_intensity_clipping_and_denoising,
@@ -28,6 +28,7 @@ def preprocess_image(image_path, model_path, keep_grooves=True, filter_with_mode
             image = filter_microgrooves_with_model(image, model)
         if not keep_grooves:
                 image = np.flip(image[:, 1:, :, :], axis=1)
-    return image.astype(np.float32)
+    image = util.img_as_ubyte(image)
+    return image
 
 

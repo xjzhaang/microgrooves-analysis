@@ -35,7 +35,6 @@ def inference_loop(dataloader, model):
             pred_mask, _, _ = model.eval(image, channels=[0,0], diameter=49.03, normalize=True, net_avg=False)
             image_uint8 = util.img_as_ubyte(np.squeeze(image))
             grooves_uint8 = np.squeeze(data['first_channel'].numpy())
-            #print(image_uint8.dtype,image_uint8.max(), grooves_uint8.max())
             pred_mask_uint8 = util.img_as_ubyte(pred_mask)
             reconstructed_volume.append(np.stack([grooves_uint8, image_uint8, pred_mask_uint8], axis=0))
 
