@@ -4,8 +4,10 @@ import torch
 from skimage import io, util
 from monai.networks.nets import UNet
 
-from preprocessing.preprocess_utils import (per_channel_scaling, apply_clahe, apply_intensity_clipping_and_denoising,
-                              detect_and_rotate_angle, filter_microgrooves, filter_microgrooves_with_model)
+from preprocessing.preprocess_utils import (per_channel_scaling, apply_clahe,
+                                            apply_intensity_clipping_and_denoising,
+                                            detect_and_rotate_angle, filter_microgrooves,
+                                            filter_microgrooves_with_model)
 
 
 def preprocess_image(image_path, model_path, keep_grooves=True, filter_grooves=True, filter_with_model=True):
@@ -17,7 +19,7 @@ def preprocess_image(image_path, model_path, keep_grooves=True, filter_grooves=T
         image = detect_and_rotate_angle(image, rho=4, sigma=25)
     if image.ndim == 3 or not filter_grooves:
         return util.img_as_ubyte(image)
-    elif filter_with_model:
+    elif not filter_with_model:
         image = filter_microgrooves(image)
     else:
         model = UNet(

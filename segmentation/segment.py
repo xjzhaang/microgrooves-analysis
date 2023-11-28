@@ -8,8 +8,6 @@ from skimage import io, util
 from cellpose import models as cellpose_models
 from tqdm import tqdm
 
-
-#warnings.filterwarnings("ignore", category=UserWarning)
 class MyoblastDataset(Dataset):
     def __init__(self, file_path):
         self.file_path = Path(file_path)

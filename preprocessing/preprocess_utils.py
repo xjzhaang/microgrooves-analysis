@@ -1,6 +1,6 @@
 import numpy as np
 
-from skimage import transform, exposure, restoration
+from skimage import transform, exposure, restoration, morphology
 from structure_tensor import eig_special_2d, structure_tensor_2d
 from tqdm import tqdm
 import torch
@@ -68,7 +68,6 @@ def angle_from_orientation(orientation):
     return angle
 
 
-
 def compute_average_angle(frames, sigma, rho):
     """
     Computes the average rotation angle based on Hough line transform.
@@ -126,7 +125,7 @@ def per_channel_scaling(image):
     return scaled_image
 
 
-def apply_clahe(image, clip_limit=0.01, channel_to_process=1, clahe_kernel_size=20):
+def apply_clahe(image, clip_limit=0.01, channel_to_process=1, clahe_kernel_size=30):
     """
     Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) preprocessing to a 3D or 4D image.
 
@@ -145,8 +144,7 @@ def apply_clahe(image, clip_limit=0.01, channel_to_process=1, clahe_kernel_size=
         clahe_result = np.zeros_like(image)
 
         for t in tqdm(range(image.shape[0])):
-            rescaled = exposure.adjust_log(image[t], 1)
-            clahe_res = exposure.equalize_adapthist(rescaled, clip_limit=clip_limit, kernel_size=(
+            clahe_res = exposure.equalize_adapthist(image[t], clip_limit=clip_limit, kernel_size=(
             image.shape[1] // clahe_kernel_size, image.shape[2] // clahe_kernel_size))
             clahe_result[t] = clahe_res
 
@@ -157,11 +155,10 @@ def apply_clahe(image, clip_limit=0.01, channel_to_process=1, clahe_kernel_size=
 
         clahe_result = np.copy(image)
         for t in tqdm(range(image.shape[0])):
-            rescaled = exposure.adjust_log(image[t, channel_to_process], 1)
-            clahe_res = exposure.equalize_adapthist(rescaled, clip_limit=clip_limit, kernel_size=(
+            # rescaled = exposure.adjust_log(image[t, channel_to_process], 1)
+            clahe_res = exposure.equalize_adapthist(image[t, channel_to_process], clip_limit=clip_limit, kernel_size=(
             image.shape[2] // clahe_kernel_size, image.shape[3] // clahe_kernel_size))
             clahe_result[t, channel_to_process] = clahe_res
-            del rescaled
             del clahe_res
 
     else:
@@ -170,7 +167,7 @@ def apply_clahe(image, clip_limit=0.01, channel_to_process=1, clahe_kernel_size=
     return clahe_result
 
 
-def apply_intensity_clipping_and_denoising(image, clip_percentile=1.5, weight=0.05, channel_to_process=1):
+def apply_intensity_clipping_and_denoising(image, clip_percentile=1.5, weight=0.1, channel_to_process=1):
     """
     Apply intensity clipping and total variation denoising to a 3D or 4D image.
 
@@ -193,6 +190,7 @@ def apply_intensity_clipping_and_denoising(image, clip_percentile=1.5, weight=0.
             clipped_image = np.clip(image[t], 0, clip_max)
             # Total variation denoising
             denoised_image = restoration.denoise_tv_chambolle(clipped_image, weight=weight)
+            denoised_image = exposure.adjust_sigmoid(denoised_image, cutoff=0.7, gain=5)
             processed_image[t] = denoised_image
             del clipped_image
             del denoised_image
@@ -211,6 +209,7 @@ def apply_intensity_clipping_and_denoising(image, clip_percentile=1.5, weight=0.
 
             # Total variation denoising for the specified channel
             denoised_image = restoration.denoise_tv_chambolle(clipped_image, weight=weight)
+            denoised_image = exposure.adjust_sigmoid(denoised_image, cutoff=0.65, gain=5)
             processed_image[t, channel_to_process] = denoised_image
             del clipped_image
             del denoised_image
@@ -317,6 +316,7 @@ def filter_microgrooves_with_model(image, model, device="cuda"):
             row_medians = np.median(val_outputs, axis=1)
             mask = row_medians == 1
             res_image[i, 2, mask, :] = 1
+            # res_image[i, 2, :, :] = val_outputs
     torch.cuda.empty_cache()
     return res_image
 

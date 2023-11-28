@@ -63,13 +63,15 @@ def main():
         directories = {
                         # '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J1 6h culture': True,
                         # '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J2 24h culture': True,
-                        # '../data/200121 hoechst': True,
-                        # '../data/191219 HOECHST 3D 5-5': True,
-                        # '../data/191015 HOECHST 3D 5-5': True,
+                        '../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J1 6h culture': True,
+                        # '../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J2 24h culture': True,
+                        # # '../data/200121 hoechst': True,
+                        # # '../data/191219 HOECHST 3D 5-5': True,
+                        # # '../data/191015 HOECHST 3D 5-5': True,
                         # '../data/200911 Diff density and BB': True,
-                        #'../data/200916 Diff densities h4,5': True,
-                        #'../data/210910 Grooves dapi 48h': False,
-                        '../data/231003 HUVEC grooves h5,2 CellMask Dapi': False,
+                        # '../data/200916 Diff densities h4,5': True,
+                        # '../data/210910 Grooves dapi 48h': False,
+                        #'../data/231003 HUVEC grooves h5,2 CellMask Dapi': False,
         }
     else:
         directories = {args.d: args.grooves}
