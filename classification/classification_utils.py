@@ -16,7 +16,7 @@ def randomly_select_frames(video_data, num_frames=10):
     Returns:
     - selected_frames (np.ndarray): Randomly selected frames.
     """
-    t, c, x, y = video_data.shape
+    t, x, y = video_data.shape
 
     if num_frames > t:
         print("Error: Number of frames to select exceeds the total number of frames in the video.")
@@ -56,12 +56,12 @@ def create_object_labels(video_data):
     - frame_labels (list): List of labels for each frame.
         Each label is a list of dictionaries with 'label' and 'regionprops' fields.
     """
-    t, c, x, y = video_data.shape
+    t, x, y = video_data.shape
     all_dataframe = []
     unique_label_counter = 1
 
     for frame_index in range(t):
-        frame = video_data[frame_index, 2]
+        frame = video_data[frame_index]
 
         # Assuming your images are already labeled
         labeled_frame = frame.copy()
@@ -105,19 +105,23 @@ def create_object_labels(video_data):
     return df
 
 
-def find_caged_nucleus(dataframe, video):
-    caged_video = np.zeros_like(video[:, 2])
+def find_caged_nucleus(dataframe, video, grooves, filter_grooves):
+    caged_video = np.zeros_like(video)
+
     for frame_id in tqdm(range(dataframe['frame_index'].max() + 1)):
         frame_0_data = dataframe[dataframe['frame_index'] == frame_id]
 
         # Create a blank labeled image for frame 0
-        labeled_image = np.zeros_like(video[frame_id, 2], dtype=np.uint8)
+        labeled_image = np.zeros_like(video[frame_id], dtype=np.uint8)
 
         # Assign cluster labels to each object in the labeled image
         for index, row in frame_0_data.iterrows():
             coords = row["coords"]
-            values_at_coords = video[frame_id, 0][coords[:, 0], coords[:, 1]]
-            on_grooves = np.mean(values_at_coords == 255) >= 0.4
+            if filter_grooves:
+                values_at_coords = grooves[frame_id, 0][coords[:, 0], coords[:, 1]]
+                on_grooves = np.mean(values_at_coords == 255) >= 0.4
+            else:
+                on_grooves = True
             conditions = (row["minor_axis_length"] <= 27 and
                           np.abs(row["orientation"]) >= 1.47 and
                           row["extent"] >= 0.73 and
@@ -130,7 +134,7 @@ def find_caged_nucleus(dataframe, video):
             original_label = int(row['label'].split("_")[0])
 
             #replace labeled_image regions with label_value when video's pixels are equal to original_label
-            labeled_image[video[frame_id, 2] == original_label] = label_value
+            labeled_image[video[frame_id] == original_label] = label_value
 
         caged_video[frame_id, :, :] = labeled_image
 

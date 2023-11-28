@@ -8,7 +8,7 @@ from monai.inferers import sliding_window_inference
 from monai.transforms import AsDiscrete, Compose
 
 
-def detect_and_rotate_angle(video_frames, num_frames_for_angle=4):
+def detect_and_rotate_angle(video_frames, rho, sigma, num_frames_for_angle=4):
     """
     Detects the rotation angle of a video based on Hough line transform
     from a subset of frames and rotates all frames accordingly.
@@ -26,7 +26,7 @@ def detect_and_rotate_angle(video_frames, num_frames_for_angle=4):
         frames_for_angle = video_frames[:num_frames_for_angle, 0, :, :]
     else:
         frames_for_angle = video_frames[:num_frames_for_angle]
-    average_angle = compute_average_angle(frames_for_angle)
+    average_angle = compute_average_angle(frames_for_angle, rho, sigma)
     rotated_frames = np.zeros_like(video_frames)
 
     for idx, frame in enumerate(video_frames):
@@ -69,7 +69,7 @@ def angle_from_orientation(orientation):
 
 
 
-def compute_average_angle(frames):
+def compute_average_angle(frames, sigma, rho):
     """
     Computes the average rotation angle based on Hough line transform.
     Then rotates the image to have horizontal grooves based on structure tensor orientation.
@@ -83,7 +83,7 @@ def compute_average_angle(frames):
 
     angles = []
     for frame in frames:
-        a = structure_tensor_2d(frame.astype(np.float32), sigma=4, rho=25)
+        a = structure_tensor_2d(frame.astype(np.float32), sigma=sigma, rho=rho)
         val, vec = eig_special_2d(a)
         ori = np.arctan2(vec[1], vec[0])
         median_ori = np.rad2deg(np.median(ori))
@@ -107,13 +107,22 @@ def per_channel_scaling(image):
     Returns:
     - scaled_image: numpy array with the same shape, but values scaled to [0, 1]
     """
-    image = image.astype(np.float32)
-    # Find the minimum and maximum values along the spatial dimensions (x, y)
-    min_vals = np.min(image, axis=(2, 3), keepdims=True)
-    max_vals = np.max(image, axis=(2, 3), keepdims=True)
-    # Perform per-channel scaling
-    scaled_image = (image - min_vals) / (max_vals - min_vals + 1e-8)
 
+    image = image.astype(np.float32)
+
+    if image.ndim == 3:
+        # 3D Image (t, x, y)
+        min_vals = np.min(image, axis=(1, 2), keepdims=True)
+        max_vals = np.max(image, axis=(1, 2), keepdims=True)
+
+    elif image.ndim == 4:
+        min_vals = np.min(image, axis=(2, 3), keepdims=True)
+        max_vals = np.max(image, axis=(2, 3), keepdims=True)
+
+    else:
+        raise ValueError("Input image must be 3D (t, x, y) or 4D (t, c, x, y).")
+
+    scaled_image = (image - min_vals) / (max_vals - min_vals + 1e-8)
     return scaled_image
 
 
