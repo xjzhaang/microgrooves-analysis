@@ -125,7 +125,7 @@ def per_channel_scaling(image):
     return scaled_image
 
 
-def apply_clahe(image, clip_limit=0.01, channel_to_process=1, clahe_kernel_size=30):
+def apply_clahe(image, clip_limit=0.01, channel_to_process=1, clahe_kernel_size=15):
     """
     Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) preprocessing to a 3D or 4D image.
 
@@ -229,7 +229,9 @@ def apply_denoising(image, weight=0.1, channel_to_process=1):
         for t in tqdm(range(image.shape[0])):
             # Total variation denoising
             denoised_image = restoration.denoise_tv_chambolle(image[t], weight=weight)
-            denoised_image = exposure.adjust_sigmoid(denoised_image, cutoff=0.7, gain=8)
+            #denoised_image = exposure.adjust_sigmoid(denoised_image, cutoff=1-np.median(denoised_image), gain=10)
+            # denoised_image = exposure.adjust_gamma(denoised_image, gamma=1.5)
+            denoised_image = exposure.rescale_intensity(denoised_image, in_range='image', out_range='dtype')
             processed_image[t] = denoised_image
             del denoised_image
 
@@ -243,7 +245,9 @@ def apply_denoising(image, weight=0.1, channel_to_process=1):
         for t in tqdm(range(image.shape[0])):
             # Total variation denoising for the specified channel
             denoised_image = restoration.denoise_tv_chambolle(image[t, channel_to_process], weight=weight)
-            denoised_image = exposure.adjust_sigmoid(denoised_image, cutoff=0.7, gain=8)
+            # denoised_image = exposure.adjust_sigmoid(denoised_image, cutoff=1-np.median(denoised_image), gain=10)
+            # denoised_image = exposure.adjust_gamma(denoised_image, gamma=1.5)
+            denoised_image = exposure.rescale_intensity(denoised_image, in_range='image', out_range='dtype')
             processed_image[t, channel_to_process] = denoised_image
             del denoised_image
     else:

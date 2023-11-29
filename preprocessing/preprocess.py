@@ -12,13 +12,13 @@ from preprocessing.preprocess_utils import (per_channel_scaling, apply_clahe,
 
 def preprocess_image(image_path, model_path, keep_grooves=True, filter_grooves=True, filter_with_model=True):
     image = io.imread(image_path)
-    image = apply_intensity_clipping(image)
     image = per_channel_scaling(image)
     image = apply_clahe(image)
+    image = apply_intensity_clipping(image)
     image = apply_denoising(image)
     if "Flat_" not in image_path.name and "FlatPos" not in image_path.name and image.ndim != 3:
         image = detect_and_rotate_angle(image, rho=4, sigma=25)
-    if image.ndim == 3 or not filter_grooves:
+    if image.ndim == 3 or not filter_grooves or "Flat_" in image_path.name or "FlatPos" in image_path.name:
         return util.img_as_ubyte(image)
     elif not filter_with_model:
         image = filter_microgrooves(image)

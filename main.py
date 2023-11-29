@@ -31,7 +31,7 @@ def segment(directory_path):
     segmentation_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'segmentations'
     segmentation_directory.mkdir(exist_ok=True)
     for i in range(len(volume_list)):
-        res_image = segment_cells(volume_list[i], model_path="./segmentation/cellpose_segmentation/data/models/CP_20231128_175751")
+        res_image = segment_cells(volume_list[i], model_path="./segmentation/cellpose_segmentation/data/models/CP_20231129_201902")
         io.imsave(segmentation_directory / volume_list[i].name, res_image, imagej=True, check_contrast=False)
         torch.cuda.empty_cache()
         print(f"Segmented {volume_list[i].name} and saved to {segmentation_directory / volume_list[i].name}")
@@ -61,6 +61,7 @@ def main():
 
     if args.d is None:
         directories = {
+                        #'../data/preprocessing_test': True,
                         '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J1 6h culture': True,
                         '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J2 24h culture': True,
                         '../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J1 6h culture': True,
