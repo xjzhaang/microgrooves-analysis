@@ -167,7 +167,7 @@ def apply_clahe(image, clip_limit=0.01, channel_to_process=1, clahe_kernel_size=
     return clahe_result
 
 
-def apply_intensity_clipping_and_denoising(image, clip_percentile=1.5, weight=0.1, channel_to_process=1):
+def apply_intensity_clipping(image, clip_percentile=1.5, channel_to_process=1):
     """
     Apply intensity clipping and total variation denoising to a 3D or 4D image.
 
@@ -188,12 +188,8 @@ def apply_intensity_clipping_and_denoising(image, clip_percentile=1.5, weight=0.
             # Intensity clipping
             clip_max = np.percentile(image[t], 100 - clip_percentile)
             clipped_image = np.clip(image[t], 0, clip_max)
-            # Total variation denoising
-            denoised_image = restoration.denoise_tv_chambolle(clipped_image, weight=weight)
-            denoised_image = exposure.adjust_sigmoid(denoised_image, cutoff=0.7, gain=5)
-            processed_image[t] = denoised_image
+            processed_image[t] = clipped_image
             del clipped_image
-            del denoised_image
 
     elif image.ndim == 4:
         # 4D Image (t, c, x, y)
@@ -206,12 +202,49 @@ def apply_intensity_clipping_and_denoising(image, clip_percentile=1.5, weight=0.
             # Intensity clipping for the specified channel
             clip_max = np.percentile(image[t, channel_to_process], 100 - clip_percentile)
             clipped_image = np.clip(image[t, channel_to_process], 0, clip_max)
-
-            # Total variation denoising for the specified channel
-            denoised_image = restoration.denoise_tv_chambolle(clipped_image, weight=weight)
-            denoised_image = exposure.adjust_sigmoid(denoised_image, cutoff=0.65, gain=5)
-            processed_image[t, channel_to_process] = denoised_image
+            processed_image[t, channel_to_process] = clipped_image
             del clipped_image
+    else:
+        raise ValueError("Input image must be 3D (t, x, y) or 4D (t, c, x, y).")
+
+    return processed_image
+
+def apply_denoising(image, weight=0.1, channel_to_process=1):
+    """
+    Apply intensity clipping and total variation denoising to a 3D or 4D image.
+
+    Parameters:
+    - image (numpy.ndarray): Input image (3D or 4D).
+    - clip_percentile (float): Percentile value for intensity clipping.
+    - weight (float): Weight parameter for total variation denoising.
+    - channel_to_process (int): If the input is 4D, specify the channel to process.
+
+    Returns:
+    - numpy.ndarray: Processed image.
+    """
+    if image.ndim == 3:
+        # 3D Image (t, x, y)
+        processed_image = np.zeros_like(image)
+
+        for t in tqdm(range(image.shape[0])):
+            # Total variation denoising
+            denoised_image = restoration.denoise_tv_chambolle(image[t], weight=weight)
+            denoised_image = exposure.adjust_sigmoid(denoised_image, cutoff=0.7, gain=8)
+            processed_image[t] = denoised_image
+            del denoised_image
+
+    elif image.ndim == 4:
+        # 4D Image (t, c, x, y)
+        if channel_to_process is None:
+            raise ValueError("For 4D images, specify the channel to process.")
+
+        processed_image = np.copy(image)
+
+        for t in tqdm(range(image.shape[0])):
+            # Total variation denoising for the specified channel
+            denoised_image = restoration.denoise_tv_chambolle(image[t, channel_to_process], weight=weight)
+            denoised_image = exposure.adjust_sigmoid(denoised_image, cutoff=0.7, gain=8)
+            processed_image[t, channel_to_process] = denoised_image
             del denoised_image
     else:
         raise ValueError("Input image must be 3D (t, x, y) or 4D (t, c, x, y).")

@@ -5,16 +5,17 @@ from skimage import io, util
 from monai.networks.nets import UNet
 
 from preprocessing.preprocess_utils import (per_channel_scaling, apply_clahe,
-                                            apply_intensity_clipping_and_denoising,
+                                            apply_intensity_clipping, apply_denoising,
                                             detect_and_rotate_angle, filter_microgrooves,
                                             filter_microgrooves_with_model)
 
 
 def preprocess_image(image_path, model_path, keep_grooves=True, filter_grooves=True, filter_with_model=True):
     image = io.imread(image_path)
+    image = apply_intensity_clipping(image)
     image = per_channel_scaling(image)
     image = apply_clahe(image)
-    image = apply_intensity_clipping_and_denoising(image)
+    image = apply_denoising(image)
     if "Flat_" not in image_path.name and "FlatPos" not in image_path.name and image.ndim != 3:
         image = detect_and_rotate_angle(image, rho=4, sigma=25)
     if image.ndim == 3 or not filter_grooves:

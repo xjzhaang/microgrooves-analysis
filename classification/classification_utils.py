@@ -122,11 +122,16 @@ def find_caged_nucleus(dataframe, video, grooves, filter_grooves):
                 on_grooves = np.mean(values_at_coords == 255) >= 0.4
             else:
                 on_grooves = True
-            conditions = (row["minor_axis_length"] <= 29 and
+            conditions = ((row["minor_axis_length"] <= 28 and
                           np.abs(row["orientation"]) >= 1.47 and
                           row["extent"] >= 0.73 and
-                          row["major_axis_length"] / row["minor_axis_length"] >= 1.3 and
-                          on_grooves
+                          row["major_axis_length"] / row["minor_axis_length"] >= 1.5 and
+                          on_grooves)
+                          or
+                          (row["minor_axis_length"] <= 24 and
+                          np.abs(row["orientation"]) >= 1.47 and
+                          row["major_axis_length"] / row["minor_axis_length"] >= 2 and
+                          on_grooves)
                           )
 
             label_value = 1 + int(conditions)
