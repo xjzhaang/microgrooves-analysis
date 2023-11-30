@@ -1,14 +1,12 @@
 from pathlib import Path
 import imagej
-
 import scyjava
-scyjava.config.add_option('-Xmx6g')
 
-def track(directory_path):
-    segmentation_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'segmentations'
-    volume_list = list(segmentation_directory.glob('*[!_grooves].tif'))
+
+def track(full_list):
+    scyjava.config.add_option('-Xmx6g')
     ij = imagej.init("/home/z/Fiji.app")
-    for volume in volume_list:
+    for volume in full_list:
         script = f"""
 import sys
 from ij import IJ
@@ -72,5 +70,6 @@ writer.appendSettings(settings)
 writer.writeToFile()
         """
         res = ij.py.run_script(language="py", script=script)
-        print("Tracking done!")
-    print(f"ImageJ version: {ij.getVersion()}")
+        print(f"Tracking done for {volume.name}!")
+    ij.dispose()
+    scyjava.jimport('java.lang.System').exit(0)

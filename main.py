@@ -8,7 +8,6 @@ from segmentation.segment import segment_cells
 from classification.classify import classify_volume
 from tracking.init_fiji import track
 
-
 def preprocess(directory_path, filter_grooves=True):
     preprocessed_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'preprocessed'
     preprocessed_directory.mkdir(parents=True, exist_ok=True)
@@ -77,7 +76,7 @@ def main():
         }
     else:
         directories = {args.d: args.grooves}
-
+    full_list = []
     for directory, filter_grooves in directories.items():
         directory_path = Path(directory)
         if args.preprocess:
@@ -92,8 +91,13 @@ def main():
         if args.track:
             trackings_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'trackings'
             trackings_directory.mkdir(exist_ok=True)
-            track(directory_path)
-
+            segmentation_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'segmentations'
+            volume_list = list(segmentation_directory.glob('*[!_grooves].tif'))
+            full_list.extend(volume_list)
+    if args.track:
+        print(f"Begin tracking")
+        track(full_list)
+        print("Tracking finished")
 
 
 if __name__ == "__main__":
