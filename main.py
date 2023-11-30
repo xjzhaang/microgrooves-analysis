@@ -6,6 +6,7 @@ from skimage import io
 from preprocessing.preprocess import preprocess_image
 from segmentation.segment import segment_cells
 from classification.classify import classify_volume
+from tracking.init_fiji import track
 
 
 def preprocess(directory_path, filter_grooves=True):
@@ -48,13 +49,13 @@ def classify(directory_path, filter_grooves=True):
         print(f"Classified {volume.name} and saved to {classification_directory / volume.name}")
         del final_vol
 
-
 def main():
     parser = argparse.ArgumentParser(description='Cell analysis.')
     parser.add_argument('--preprocess', action='store_true', help='Enable preprocessing')
     parser.add_argument('--grooves', action='store_true', help='Segment groves or not')
     parser.add_argument('--segment', action='store_true', help='Enable segmentation')
     parser.add_argument('--classify', action='store_true', help='Enable classification')
+    parser.add_argument('--track', action='store_true', help='Enable classification')
     parser.add_argument('--d', type=str, default=None, help='directory')
 
     args = parser.parse_args()
@@ -88,6 +89,11 @@ def main():
         if args.classify:
             print(f"Begin classifying {directory_path.name}")
             classify(directory_path, filter_grooves=filter_grooves)
+        if args.track:
+            trackings_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'trackings'
+            trackings_directory.mkdir(exist_ok=True)
+            track(directory_path)
+
 
 
 if __name__ == "__main__":
