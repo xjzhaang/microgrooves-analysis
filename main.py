@@ -10,7 +10,8 @@ from tracking.init_fiji import track
 
 
 def preprocess(directory_path, filter_grooves=True):
-    preprocessed_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'preprocessed'
+    parent = directory_path.parents[0]
+    preprocessed_directory = Path('./output') / directory_path.relative_to(Path(parent)) / 'preprocessed'
     preprocessed_directory.mkdir(parents=True, exist_ok=True)
     for file_path in directory_path.glob('*.tif'):
         destination_path = preprocessed_directory / file_path.relative_to(directory_path)
@@ -27,9 +28,10 @@ def preprocess(directory_path, filter_grooves=True):
 
 
 def segment(directory_path):
-    preprocessed_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'preprocessed'
+    parent = directory_path.parents[0]
+    preprocessed_directory = Path('./output') / directory_path.relative_to(Path(parent)) / 'preprocessed'
     volume_list = list(preprocessed_directory.glob('*[!_grooves].tif'))
-    segmentation_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'segmentations'
+    segmentation_directory = Path('./output') / directory_path.relative_to(Path(parent)) / 'segmentations'
     segmentation_directory.mkdir(exist_ok=True)
     for i in range(len(volume_list)):
         res_image = segment_cells(volume_list[i], model_path="./segmentation/cellpose_segmentation/data/models/CP_20231129_201902")
@@ -39,8 +41,9 @@ def segment(directory_path):
 
 
 def classify(directory_path, filter_grooves=True):
-    segmentation_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'segmentations'
-    classification_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'classifications'
+    parent = directory_path.parents[0]
+    segmentation_directory = Path('./output') / directory_path.relative_to(Path(parent)) / 'segmentations'
+    classification_directory = Path('./output') / directory_path.relative_to(Path(parent)) / 'classifications'
     classification_directory.mkdir(exist_ok=True)
     volume_list = list(segmentation_directory.glob('*[!_grooves].tif'))
     for volume in volume_list:
@@ -92,9 +95,9 @@ def main():
             print(f"Begin classifying {directory_path.name}")
             classify(directory_path, filter_grooves=filter_grooves)
         if args.track:
-            trackings_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'trackings'
+            trackings_directory = Path('./output') / directory_path.relative_to(Path(directory_path.parents[0])) / 'trackings'
             trackings_directory.mkdir(exist_ok=True)
-            segmentation_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'segmentations'
+            segmentation_directory = Path('./output') / directory_path.relative_to(Path(directory_path.parents[0])) / 'segmentations'
             volume_list = list(segmentation_directory.glob('*[!_grooves].tif'))
             full_list.extend(volume_list)
     if args.track:

@@ -20,16 +20,16 @@ If you're new to the project, consider following these steps to get started:
 
    Using conda (recommended):
    ```bash
-   conda create --name microgroove-movies python=3.11
-   conda activate microgroove-movies
+   conda create --name micrgrooves-analysis python=3.11
+   conda activate micrgrooves-analysis
    conda install --file requirements.txt
    ```
    Using pip:
    ```bash
    # Using venv (built-in module in Python 3.3 and newer)
-   python3.11 -m venv microgroove-movies 
+   python3.11 -m venv micrgrooves-analysis
    microgroove-movies\Scripts\activate   #Windows OS
-   source microgroove-movies/bin/activate   #Linux/MAC OS
+   source micrgrooves-analysis/bin/activate   #Linux/MAC OS
    pip install -r requirements.txt
    ```
    **If your device has a CUDA enabled GPU**: it is recommended to install Pytorch and CUDA from https://pytorch.org/get-started/locally/
@@ -38,4 +38,57 @@ If you're new to the project, consider following these steps to get started:
 
 ## Usage
 
-To be written...
+### Finding your directory
+All image outputs are saved in a folder named `output` within the repository. 
+When using the scripts, you only need to specify `directory_path`, 
+which can be the relative path to your images with respect to this repository.
+
+For example in the following structure, your directory paths would be <em>../data/first_experiment</em> 
+and <em>../data/second_experiment</em>:
+```
+data/
+├── first_experiment/
+│   ├── image1.tif
+│   ├── image2.tif
+│   └── ...
+├── second_experiment/
+│   ├── image1.tif
+│   ├── image2.tif
+│   └── ...
+├── ....
+│
+microgrooves-analysis/
+├── main.py
+├── README.md
+├── ....
+
+```
+
+### Running the code
+Below are some commands you can use to perform the different steps. 
+
+1. **Preprocessing**
+
+   ```bash
+   cd micrgrooves-analysis
+   python main.py --preprocess -d [directory_path]
+   ```
+
+2. **Segmentation with Cellpose**
+
+   ```bash
+   python main.py --segment -d [directory_path]
+   ```
+   
+3. **Classification**
+
+   ```bash
+   python main.py --classify -d [directory_path]
+   ```
+4. **Tracking with TrackMate**
+   
+   As we use PyImageJ to initialize a gateway interface to your locally installed Fiji/ImageJ2, you need 
+to specify the absolute installation path of Fiji on your machine. Normally for linux, it is <em>/opt/fiji/Fiji.app</em>.
+   ```bash
+   python main.py --track -d [directory_path] -fiji [installation_path]
+   ```
