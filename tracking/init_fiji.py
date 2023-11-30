@@ -3,9 +3,9 @@ import imagej
 import scyjava
 
 
-def track(full_list):
+def track(full_list, fiji_path):
     scyjava.config.add_option('-Xmx6g')
-    ij = imagej.init("/home/z/Fiji.app")
+    ij = imagej.init(fiji_path)
     for volume in full_list:
         script = f"""
 import sys

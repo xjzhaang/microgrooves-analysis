@@ -8,6 +8,7 @@ from segmentation.segment import segment_cells
 from classification.classify import classify_volume
 from tracking.init_fiji import track
 
+
 def preprocess(directory_path, filter_grooves=True):
     preprocessed_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'preprocessed'
     preprocessed_directory.mkdir(parents=True, exist_ok=True)
@@ -48,14 +49,16 @@ def classify(directory_path, filter_grooves=True):
         print(f"Classified {volume.name} and saved to {classification_directory / volume.name}")
         del final_vol
 
+
 def main():
     parser = argparse.ArgumentParser(description='Cell analysis.')
     parser.add_argument('--preprocess', action='store_true', help='Enable preprocessing')
     parser.add_argument('--grooves', action='store_true', help='Segment groves or not')
     parser.add_argument('--segment', action='store_true', help='Enable segmentation')
     parser.add_argument('--classify', action='store_true', help='Enable classification')
-    parser.add_argument('--track', action='store_true', help='Enable classification')
-    parser.add_argument('--d', type=str, default=None, help='directory')
+    parser.add_argument('--track', action='store_true', help='Enable Tracking with Fiji')
+    parser.add_argument('-fiji', type=str, default="/home/z/Fiji.app", help='Fiji.app path')
+    parser.add_argument('-d', type=str, default=None, help='directory')
 
     args = parser.parse_args()
 
@@ -96,7 +99,7 @@ def main():
             full_list.extend(volume_list)
     if args.track:
         print(f"Begin tracking")
-        track(full_list)
+        track(full_list, fiji_path=args.fiji)
         print("Tracking finished")
 
 
