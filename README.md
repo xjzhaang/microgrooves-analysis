@@ -40,10 +40,9 @@ If you're new to the project, consider following these steps to get started:
 
 ### Finding your directory
 All image outputs are saved in a folder named `output` within the repository. 
-When using the scripts, you only need to specify `directory_path`, 
-which can be the relative path to your images with respect to this repository.
-
-For example in the following structure, your directory paths would be <em>../data/first_experiment</em> 
+When using the scripts, you only need to specify `directory_path`.
+Your images should be in placed in a `data` folder parallel to the repository.
+For example, in the following structure, your `directory_paths` would be <em>../data/first_experiment</em> 
 and <em>../data/second_experiment</em>:
 ```
 data/
