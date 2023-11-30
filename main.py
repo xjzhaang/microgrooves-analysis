@@ -93,7 +93,6 @@ def main():
             print(f"Begin classifying {directory_path.name}")
             classify(directory_path, filter_grooves=filter_grooves)
         if args.track:
-            print(directory_path.resolve().parents[0])
             trackings_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'trackings'
             trackings_directory.mkdir(exist_ok=True)
             segmentation_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'segmentations'
