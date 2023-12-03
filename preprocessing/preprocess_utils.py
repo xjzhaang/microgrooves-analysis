@@ -1,6 +1,6 @@
 import numpy as np
 
-from skimage import transform, exposure, restoration, morphology
+from skimage import transform, exposure, restoration
 from structure_tensor import eig_special_2d, structure_tensor_2d
 from tqdm import tqdm
 import torch

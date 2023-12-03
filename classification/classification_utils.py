@@ -1,7 +1,7 @@
 import numpy as np
 
 import pandas as pd
-from skimage.measure import label, regionprops
+from skimage.measure import regionprops
 from tqdm import tqdm
 
 
@@ -26,6 +26,7 @@ def randomly_select_frames(video_data, num_frames=10):
     selected_frames = video_data[selected_indices]
 
     return selected_frames
+
 
 def is_near_border(x, y, distance, image_shape):
     """
