@@ -83,20 +83,20 @@ def create_object_labels(video_data):
             prop_dict = {'label': unique_label, 'frame_index': frame_index, 'regionprops': prop}
             frame_properties.append(prop_dict)
             centroid_x, centroid_y = prop.centroid
-            if not is_near_border(centroid_x, centroid_y, 40, (x, y)):
+            #if not is_near_border(centroid_x, centroid_y, 40, (x, y)):
                 # Extract relevant properties
-                properties_dict = {
-                    'label': unique_label,
-                    'frame_index': frame_index,
-                    'major_axis_length': prop.major_axis_length,
-                    'minor_axis_length': prop.minor_axis_length,
-                    'bbox': prop.bbox,
-                    'area_bbox': prop.area_bbox,
-                    'coords': prop.coords,
-                    'extent': prop.extent,
-                    'orientation': prop.orientation,
-                }
-                dataframe_properties.append(properties_dict)
+            properties_dict = {
+                'label': unique_label,
+                'frame_index': frame_index,
+                'major_axis_length': prop.major_axis_length,
+                'minor_axis_length': prop.minor_axis_length,
+                'bbox': prop.bbox,
+                'area_bbox': prop.area_bbox,
+                'coords': prop.coords,
+                'extent': prop.extent,
+                'orientation': prop.orientation,
+            }
+            dataframe_properties.append(properties_dict)
 
         all_dataframe.extend(dataframe_properties)
 

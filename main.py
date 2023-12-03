@@ -7,6 +7,7 @@ from preprocessing.preprocess import preprocess_image
 from segmentation.segment import segment_cells
 from classification.classify import classify_volume
 from tracking.init_fiji import track
+from tracking.trackmate_utils import process_trackmate_xml
 
 
 def preprocess(directory_path, filter_grooves=True):
@@ -51,6 +52,14 @@ def classify(directory_path, filter_grooves=True):
         del final_vol
 
 
+def process_xml(directory_path):
+    trackings_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'trackings'
+    xml_list = list(trackings_directory.glob('*exportModel.xml'))
+    for xml_file in xml_list:
+        process_trackmate_xml(xml_file)
+        print(f"Filtered {xml_file}!")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Cell analysis.')
     parser.add_argument('--preprocess', action='store_true', help='Enable preprocessing')
@@ -58,6 +67,7 @@ def main():
     parser.add_argument('--segment', action='store_true', help='Enable segmentation')
     parser.add_argument('--classify', action='store_true', help='Enable classification')
     parser.add_argument('--track', action='store_true', help='Enable Tracking with Fiji')
+    parser.add_argument('--filter_xml', action='store_true', help='Filtered xml tracks')
     parser.add_argument('-fiji', type=str, default="/home/z/Fiji.app", help='Fiji.app path')
     parser.add_argument('-d', type=str, default=None, help='directory')
 
@@ -102,6 +112,11 @@ def main():
         print(f"Begin tracking")
         track(full_list, fiji_path=args.fiji)
         print("Tracking finished")
+
+    if args.filter_xml:
+        for directory in directories.keys():
+            directory_path = Path(directory)
+            process_xml(directory_path)
 
 
 if __name__ == "__main__":
