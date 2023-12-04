@@ -16,7 +16,7 @@ from fiji.plugin.trackmate import Settings
 from fiji.plugin.trackmate import TrackMate
 from fiji.plugin.trackmate import SelectionModel
 from fiji.plugin.trackmate import Logger
-from fiji.plugin.trackmate.detection import LabelImageDetectorFactory
+from fiji.plugin.trackmate.detection import MaskDetectorFactory
 from fiji.plugin.trackmate.tracking.kalman import AdvancedKalmanTrackerFactory
 from fiji.plugin.trackmate.io import TmXmlWriter
 import fiji.plugin.trackmate.action.ExportTracksToXML as ExportTracksToXML
@@ -29,9 +29,9 @@ sys.setdefaultencoding('utf-8')
 
 # Get currently selected image
 # imp = WindowManager.getCurrentImage()
-filename = '{str(volume.name).replace('tif', '')}'
-path = '{"/home/z/Desktop/microgrooves-movies/" + str(volume.parent).replace("segmentations", "trackings")}'
-imp = IJ.openImage('{"/home/z/Desktop/microgrooves-movies/" + str(volume)}')
+filename = '{str(volume).replace('tif', '')}'
+path = '{str(volume).replace("segmentations", "trackings")}'
+imp = IJ.openImage('{str(volume)}')
 dims = imp.getDimensions()
 imp.setDimensions( dims[ 2 ], dims[ 4 ], dims[ 3 ] )
 print(imp.getDimensions())
@@ -42,16 +42,16 @@ model.setLogger(Logger.IJ_LOGGER)
 settings = Settings(imp)
 
 # Configure detector - We use the Strings for the keys
-settings.detectorFactory = LabelImageDetectorFactory()
+settings.detectorFactory = MaskDetectorFactory()
 settings.detectorSettings = {{
     'TARGET_CHANNEL': 1,
     'SIMPLIFY_CONTOURS': True,
 }}
 settings.trackerFactory = AdvancedKalmanTrackerFactory()
 settings.trackerSettings = settings.trackerFactory.getDefaultSettings()  # almost good enough
-settings.trackerSettings['LINKING_MAX_DISTANCE'] = 30.0
+settings.trackerSettings['LINKING_MAX_DISTANCE'] = 50.0
 settings.trackerSettings['KALMAN_SEARCH_RADIUS'] = 60.0
-settings.trackerSettings['MAX_FRAME_GAP'] = 3
+settings.trackerSettings['MAX_FRAME_GAP'] = 2
 settings.addAllAnalyzers()
 trackmate = TrackMate(model, settings)
 ok = trackmate.checkInput()
@@ -62,7 +62,7 @@ ok = trackmate.process()
 if not ok:
     sys.exit(str(trackmate.getErrorMessage()))
 
-outFile = File(path, filename + "exportModel.xml")  # this will write the full trackmate xml.
+outFile = File(filename + "exportModel.xml")  # this will write the full trackmate xml.
 writer = TmXmlWriter(outFile)
 writer.appendModel(model)
 writer.appendSettings(settings)

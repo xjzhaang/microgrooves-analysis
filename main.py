@@ -68,7 +68,7 @@ def main():
     parser.add_argument('--classify', action='store_true', help='Enable classification')
     parser.add_argument('--track', action='store_true', help='Enable Tracking with Fiji')
     parser.add_argument('--filter_xml', action='store_true', help='Filtered xml tracks')
-    parser.add_argument('-fiji', type=str, default="/home/z/Fiji.app", help='Fiji.app path')
+    parser.add_argument('-fiji', type=str, default="/home/xingjian/Desktop/Fiji.app", help='Fiji.app path')
     parser.add_argument('-d', type=str, default=None, help='directory')
 
     args = parser.parse_args()
@@ -77,16 +77,16 @@ def main():
         directories = {
                         #'../data/preprocessing_test': True,
                         '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J1 6h culture': True,
-                        '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J2 24h culture': True,
-                        '../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J1 6h culture': True,
-                        '../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J2 24h culture': True,
-                        '../data/200121 hoechst': True,
-                        '../data/191219 HOECHST 3D 5-5': True,
-                        '../data/191015 HOECHST 3D 5-5': True,
-                        '../data/200911 Diff density and BB': True,
-                        '../data/200916 Diff densities h4,5': True,
-                        '../data/210910 Grooves dapi 48h': False,
-                        '../data/231003 HUVEC grooves h5,2 CellMask Dapi': False,
+                        #'../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J2 24h culture': True,
+                        #'../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J1 6h culture': True,
+                        #'../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J2 24h culture': True,
+                        #'../data/200121 hoechst': True,
+                        #'../data/191219 HOECHST 3D 5-5': True,
+                        #'../data/191015 HOECHST 3D 5-5': True,
+                        #'../data/200911 Diff density and BB': True,
+                        #'../data/200916 Diff densities h4,5': True,
+                        #'../data/210910 Grooves dapi 48h': False,
+                        #'../data/231003 HUVEC grooves h5,2 CellMask Dapi': False,
         }
     else:
         directories = {args.d: args.grooves}
@@ -108,9 +108,11 @@ def main():
             segmentation_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'segmentations'
             volume_list = list(segmentation_directory.glob('*[!_grooves].tif'))
             full_list.extend(volume_list)
+
+    abs_paths = [path.resolve() for path in full_list]
     if args.track:
         print(f"Begin tracking")
-        track(full_list, fiji_path=args.fiji)
+        track(abs_paths, fiji_path=args.fiji)
         print("Tracking finished")
 
     if args.filter_xml:
