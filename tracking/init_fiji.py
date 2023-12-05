@@ -17,6 +17,7 @@ from fiji.plugin.trackmate import TrackMate
 from fiji.plugin.trackmate import SelectionModel
 from fiji.plugin.trackmate import Logger
 from fiji.plugin.trackmate.detection import MaskDetectorFactory
+from fiji.plugin.trackmate.detection import LabelImageDetectorFactory
 from fiji.plugin.trackmate.tracking.kalman import AdvancedKalmanTrackerFactory
 from fiji.plugin.trackmate.io import TmXmlWriter
 import fiji.plugin.trackmate.action.ExportTracksToXML as ExportTracksToXML
@@ -29,7 +30,6 @@ sys.setdefaultencoding('utf-8')
 
 # Get currently selected image
 # imp = WindowManager.getCurrentImage()
-filename = '{str(volume).replace('tif', '')}'
 path = '{str(volume).replace("segmentations", "trackings")}'
 imp = IJ.openImage('{str(volume)}')
 dims = imp.getDimensions()
@@ -42,16 +42,22 @@ model.setLogger(Logger.IJ_LOGGER)
 settings = Settings(imp)
 
 # Configure detector - We use the Strings for the keys
-settings.detectorFactory = MaskDetectorFactory()
+# settings.detectorFactory = MaskDetectorFactory()
+settings.detectorFactory = LabelImageDetectorFactory()
 settings.detectorSettings = {{
     'TARGET_CHANNEL': 1,
     'SIMPLIFY_CONTOURS': True,
 }}
 settings.trackerFactory = AdvancedKalmanTrackerFactory()
 settings.trackerSettings = settings.trackerFactory.getDefaultSettings()  # almost good enough
+settings.trackerSettings['ALLOW_TRACK_SPLITTING'] = True
+settings.trackerSettings['ALLOW_TRACK_MERGING'] = True
+settings.trackerSettings['GAP_CLOSING_MAX_DISTANCE'] = 25.0
+settings.trackerSettings['SPLITTING_MAX_DISTANCE'] = 25.0
+settings.trackerSettings['MERGING_MAX_DISTANCE'] = 25.0
 settings.trackerSettings['LINKING_MAX_DISTANCE'] = 50.0
 settings.trackerSettings['KALMAN_SEARCH_RADIUS'] = 60.0
-settings.trackerSettings['MAX_FRAME_GAP'] = 2
+settings.trackerSettings['MAX_FRAME_GAP'] = 1
 settings.addAllAnalyzers()
 trackmate = TrackMate(model, settings)
 ok = trackmate.checkInput()
@@ -62,6 +68,7 @@ ok = trackmate.process()
 if not ok:
     sys.exit(str(trackmate.getErrorMessage()))
 
+filename = '{str(volume).replace('tif', '').replace("segmentations", "trackings")}'
 outFile = File(filename + "exportModel.xml")  # this will write the full trackmate xml.
 writer = TmXmlWriter(outFile)
 writer.appendModel(model)
@@ -71,4 +78,4 @@ writer.writeToFile()
         res = ij.py.run_script(language="py", script=script)
         print(f"Tracking done for {volume.name}!")
     ij.dispose()
-    scyjava.jimport('java.lang.System').exit(0)
+    #scyjava.jimport('java.lang.System').exit(0)

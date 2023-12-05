@@ -99,11 +99,11 @@ def read_trackmate_xml(trackmate_xml_path, get_tracks=False):
     tracks_ = pd.DataFrame(tracks, columns=features)
     tracks_ = tracks_.astype(float)
 
-    # tracks_ = tracks_.loc[:, track_labels.keys()]
-    # tracks_.columns = [track_labels[k] for k in track_labels.keys()]
-    #
-    # trajs = trajs.loc[:, object_labels.keys()]
-    # trajs.columns = [object_labels[k] for k in object_labels.keys()]
+    #tracks_ = tracks_.loc[:, track_labels.keys()]
+    #tracks_.columns = [track_labels[k] for k in track_labels.keys()]
+
+    #trajs = trajs.loc[:, object_labels.keys()]
+    #trajs.columns = [object_labels[k] for k in object_labels.keys()]
     trajs['label'] = np.arange(trajs.shape[0])
 
     # Get tracks
@@ -138,6 +138,16 @@ def add_caged_feature(row, image):
     return pixel_value
 
 
+def remove_outlier_tracks_and_spots(tracks, spots):
+    duration_filtered_tracks = tracks[tracks['TRACK_DURATION'] >= 3]
+    distance_filtered_tracks = duration_filtered_tracks[duration_filtered_tracks['TOTAL_DISTANCE_TRAVELED'] >= 80]
+    filtered_spot_ids = distance_filtered_tracks['TRACK_ID'].unique()
+    # Filter the spots DataFrame based on the 'label' column
+    filtered_spots = spots[spots['label'].isin(filtered_spot_ids)]
+
+    return distance_filtered_tracks, filtered_spots
+
+
 def spots_preprocessing(spots, image):
     df_no_nan = spots.dropna(subset=['label'])
     res = df_no_nan.copy()
@@ -160,7 +170,7 @@ def add_feature_to_xml(root, feature_name, feature_shortname, feature_dimension,
 
 
 def process_trackmate_xml(trackmate_file):
-    dataframe, _ = read_trackmate_xml(trackmate_file)
+    spots_dataframe, tracks = read_trackmate_xml(trackmate_file, get_tracks=True)
     tree = et.parse(trackmate_file)
     root = tree.getroot()
     image_data_element = root.find(".//Settings/ImageData")
@@ -169,17 +179,44 @@ def process_trackmate_xml(trackmate_file):
     filename = image_data_element.get("filename")
     folder = image_data_element.get("folder").replace("segmentations", "classifications")
     image = io.imread(folder + filename)
-    caged_dataframe = spots_preprocessing(dataframe, image)
+    caged_dataframe = spots_preprocessing(spots_dataframe, image)
     add_feature_to_xml(root, 'caged', 'Caged', 'NONE', True)
 
-    for index, row in caged_dataframe.iterrows():
+    final_tracks, final_spots = remove_outlier_tracks_and_spots(tracks, caged_dataframe)
+
+    track_filters = root.findall(".//FilteredTracks/TrackID")
+    spot_ids_to_filter = final_spots['ID'].tolist()
+    track_ids_to_filter = final_tracks['TRACK_ID'].tolist()
+
+    # Filter spots, tracks, and edges
+    filtered_track_ids = [track for track in track_filters if float(track.get('TRACK_ID')) not in track_ids_to_filter]
+
+    for allspot in root.findall('.//AllSpots'):
+        for spots_in_frame in allspot.findall('.//SpotsInFrame'):
+            for spot in spots_in_frame.findall('.//Spot'):
+                if float(spot.get('ID')) not in spot_ids_to_filter:
+                    spots_in_frame.remove(spot)
+
+    for all_tracks in root.findall('.//AllTracks'):
+        for track in all_tracks.findall('.//Track'):
+            if float(track.get('TRACK_ID')) not in track_ids_to_filter:
+                all_tracks.remove(track)
+
+    for all_tracks in root.findall(".//FilteredTracks"):
+        for track in filtered_track_ids:
+            all_tracks.remove(track)
+
+    image_data_element = root.find('.//Settings/ImageData')
+    spots_count = root.find(".//AllSpots")
+    spots_count.set('nspots', str(len(spot_ids_to_filter)))
+
+    if image_data_element is not None:
+        image_data_element.set('folder', image_data_element.get('folder').replace("segmentations", "preprocessed"))
+
+    for index, row in final_spots.iterrows():
         spot_id = int(row['ID'])
         caged_value = row['caged']
-
-        # Find the <Spot> element with the matching ID
         spot_element = root.find(f".//Spot[@ID='{spot_id}']")
-
-        # Add/update the 'caged' attribute in the <Spot> element
         spot_element.set('caged', str(caged_value))
 
     # Save the updated XML file
