@@ -40,7 +40,6 @@ def segment(directory_path):
 
 
 def classify(directory_path, filter_grooves=True):
-    parent = directory_path.parents[0]
     segmentation_directory = Path('./output') / directory_path.relative_to('../data') / 'segmentations'
     classification_directory = Path('./output') / directory_path.relative_to('../data') / 'classifications'
     classification_directory.mkdir(exist_ok=True)
