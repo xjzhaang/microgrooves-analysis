@@ -1,5 +1,3 @@
-
-
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from monai.networks.nets import UNet
@@ -11,7 +9,7 @@ model = UNet(
     spatial_dims=2,
     in_channels=1,
     out_channels=1,
-    channels=(16, 32, 64, 128, 256),
+    channels=(32, 64, 128, 256, 512),
     strides=(2, 2, 2, 2),
 )
 EPOCH=200

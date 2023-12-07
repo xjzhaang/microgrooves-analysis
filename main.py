@@ -5,9 +5,10 @@ import torch
 from skimage import io
 from preprocessing.preprocess import preprocess_image
 from segmentation.segment import segment_cells
-from classification.classify import classify_volume
+from classification.classify import classify_volume, plot_sensitivity, sensitivities_from_paths
 from tracking.init_fiji import track
 from tracking.trackmate_utils import process_trackmate_xml
+
 
 
 def preprocess(directory_path, filter_grooves=True):
@@ -67,6 +68,7 @@ def main():
     parser.add_argument('--classify', action='store_true', help='Enable classification')
     parser.add_argument('--track', action='store_true', help='Enable Tracking with Fiji')
     parser.add_argument('--filter_xml', action='store_true', help='Filtered xml tracks')
+    parser.add_argument('--sens',action='store_true', help='Plot caging percentages as functions of criteria')
     parser.add_argument('-fiji', type=str, default="/home/z/Fiji.app", help='Fiji.app path')
     parser.add_argument('-d', type=str, default=None, help='directory')
 
@@ -74,14 +76,13 @@ def main():
 
     if args.d is None:
         directories = {
-                        #'../data/preprocessing_test': True,
-                        '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J1 6h culture': True,
+                        # '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J1 6h culture': True,
                         # '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J2 24h culture': True,
                         # '../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J1 6h culture': True,
                         # '../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J2 24h culture': True,
                         # '../data/200121 hoechst': True,
                         # '../data/191219 HOECHST 3D 5-5': True,
-                        # '../data/191015 HOECHST 3D 5-5': True,
+                        '../data/191015 HOECHST 3D 5-5': True,
                         # '../data/200911 Diff density and BB': True,
                         # '../data/200916 Diff densities h4,5': True,
                         # '../data/210910 Grooves dapi 48h': False,
@@ -118,6 +119,30 @@ def main():
         for directory in directories.keys():
             directory_path = Path(directory)
             process_xml(directory_path)
+
+    if args.sens:
+        for directory in directories.keys():
+            directory_path = Path(directory)
+            segmentation_directory = Path('./output') / directory_path.relative_to(Path('../data')) / 'segmentations'
+            if "Myoblastes" in directory:
+                for subtype in ['WT', 'Mut']:
+                    volume_list = list(segmentation_directory.glob(f'**/*{subtype}_*'))
+                    full_dict, param_dict, mean_std_dict = sensitivities_from_paths(volume_list, directories[directory])
+                    save_path = (Path(str(segmentation_directory).replace("segmentations", "classifications"))
+                                 / f'caging_sensitivity_{subtype}.png')
+                    plot_sensitivity(save_path, param_dict, mean_std_dict)
+                    print(f"Saved {save_path}!")
+            else:
+                for subtype in ['5h1', '5h5', '5h4,5', 'HD', 'LD', 'merged']:
+                    volume_list = list(segmentation_directory.glob(f'**/*{subtype}*'))
+                    if not volume_list:
+                        pass
+                    else:
+                        full_dict, param_dict, mean_std_dict = sensitivities_from_paths(volume_list, directories[directory])
+                        save_path = (Path(str(segmentation_directory).replace("segmentations", "classifications"))
+                                     / f'caging_sensitivity_{subtype}.png')
+                        plot_sensitivity(save_path, param_dict, mean_std_dict)
+                        print(f"Saved {save_path}!")
 
 
 if __name__ == "__main__":

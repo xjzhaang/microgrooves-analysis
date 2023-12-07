@@ -53,18 +53,26 @@ def angle_from_orientation(orientation):
     """
     # Ensure orientation is in the range [0, 180)
     orientation = orientation % 180
-    angle = 0
 
-    if 0 <= orientation < 90:
-        if orientation >= 45:
-            angle = 90 - orientation
-        else:
-            angle = -orientation + 90
-    elif 90 <= orientation < 180:
-        if orientation >= 135:
-            angle = 270 - orientation
-        else:
-            angle = 90 - orientation
+    # Define a threshold for considering special cases
+    threshold = 0.5  # You can adjust this threshold as needed
+    angle = 0
+    if abs(orientation) < threshold or abs(orientation - 180) < threshold:
+        angle = 90
+    elif abs(orientation - 90) < threshold:
+        angle = 0
+    else:
+        # Calculate the mean angle for other cases
+        if 0 <= orientation < 90:
+            if orientation >= 45:
+                angle = 90 - orientation
+            else:
+                angle = -orientation + 90
+        elif 90 <= orientation < 180:
+            if orientation >= 135:
+                angle = 270 - orientation
+            else:
+                angle = 90 - orientation
     return angle
 
 
@@ -321,7 +329,7 @@ def filter_microgrooves(image):
     return thresholded_image
 
 
-def filter_microgrooves_with_model(image, model, device="cuda"):
+def filter_microgrooves_with_model(image, model, post_process=False, device="cuda"):
     """
     Applies a deep learning model to filter microgrooves in a multi-channel image.
 
@@ -348,12 +356,14 @@ def filter_microgrooves_with_model(image, model, device="cuda"):
         for i in range(len(image)):
             roi_size = (512, 512)
             sw_batch_size = 4
-            val_outputs = sliding_window_inference(image[i, 0, :, :].unsqueeze(0).unsqueeze(0), roi_size, sw_batch_size, model)
+            val_outputs = sliding_window_inference(image[i, 0, :, :].unsqueeze(0).unsqueeze(0), roi_size, sw_batch_size, model, 0.7)
             val_outputs = np.squeeze(post(val_outputs).detach().cpu())
             row_medians = np.median(val_outputs, axis=1)
-            mask = row_medians == 1
-            res_image[i, 2, mask, :] = 1
-            # res_image[i, 2, :, :] = val_outputs
+            if post_process:
+                mask = row_medians == 1
+                res_image[i, 2, mask, :] = 1
+            else:
+                res_image[i, 2, :, :] = val_outputs
     torch.cuda.empty_cache()
     return res_image
 

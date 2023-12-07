@@ -27,7 +27,7 @@ def preprocess_image(image_path, model_path, keep_grooves=True, filter_grooves=T
             spatial_dims=2,
             in_channels=1,
             out_channels=1,
-            channels=(16, 32, 64, 128, 256),
+            channels=(32, 64, 128, 256, 512),
             strides=(2, 2, 2, 2),)
         model.load_state_dict(torch.load(model_path)["model"])
         image = filter_microgrooves_with_model(image, model)

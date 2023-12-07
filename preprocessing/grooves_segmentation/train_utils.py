@@ -68,15 +68,11 @@ class Trainer():
                             desc=f"Epoch #{self.epochs_run}")
         for batch, data in progress_bar:
             X, y = data["image"].to(self.device), data["mask"].astype(torch.int).to(self.device)
-            loss_batch = 0
-            with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=False):
-                y_pred = self.model(X)
-
+            y_pred = self.model(X)
             loss_batch = self.loss_function(y_pred, y)
             loss += loss_batch.item()
             self.scaler.scale(loss_batch).backward()
             self.scaler.step(self.optimizer)
-            old_scaler = self.scaler.get_scale()
             self.scaler.update()
             self.optimizer.zero_grad(set_to_none=True)
             lr = self.scheduler.get_last_lr()[0]
@@ -100,7 +96,7 @@ class Trainer():
             for batch, data in progress_bar:
                 X, y = data["image"].to(self.device), data["mask"].to(self.device)
 
-                y_pred = sliding_window_inference(X, (512, 512), 4, self.model)
+                y_pred = sliding_window_inference(X, roi_size=(512, 512), sw_batch_size=4, predictor=self.model, overlap=0.7)
                 loss_batch = self.loss_function(y_pred, y)
 
                 loss += loss_batch.item()

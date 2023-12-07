@@ -8,6 +8,7 @@ from torch.utils.data import random_split
 from monai.data import ThreadDataLoader
 from monai.transforms import Compose, RandCropByPosNegLabeld, RandFlipd, RandRotated, RandRotate90d
 
+
 class MicrogroovesDataset(Dataset):
 
     def __init__(self, root_folder, is_train, transform=None):
@@ -41,9 +42,9 @@ class MicrogroovesDataset(Dataset):
         mask = io.imread(mask_path)
         image = self.per_channel_scaling(image)
         mask = mask.astype(np.float32)
-        data = {}
-        data["image"] = torch.tensor(image).unsqueeze(0)
-        data["mask"] = torch.tensor(mask).unsqueeze(0)
+        mask[mask != 0] = 1
+
+        data = {"image": torch.tensor(image).unsqueeze(0), "mask": torch.tensor(mask).unsqueeze(0)}
         if self.transform:
             data = self.transform(data)
 

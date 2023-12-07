@@ -120,19 +120,22 @@ def find_caged_nucleus(dataframe, video, grooves, filter_grooves):
             coords = row["coords"]
             if filter_grooves:
                 values_at_coords = grooves[frame_id, 0][coords[:, 0], coords[:, 1]]
-                on_grooves = np.mean(values_at_coords == 255) >= 0.4
+                on_grooves = np.mean(values_at_coords == 255) >= 0.47
+                on_grooves2 = np.mean(values_at_coords == 255) >= 0.55
             else:
                 on_grooves = True
-            conditions = ((row["minor_axis_length"] <= 28 and
+                on_grooves2 = True
+            conditions = ((row["minor_axis_length"] <= 30 and
                           np.abs(row["orientation"]) >= 1.47 and
-                          row["extent"] >= 0.73 and
-                          row["major_axis_length"] / row["minor_axis_length"] >= 1.5 and
+                          row["extent"] >= 0.74 and
+                          row["major_axis_length"] / row["minor_axis_length"] >= 2.0 and
                           on_grooves)
                           or
-                          (row["minor_axis_length"] <= 24 and
-                          np.abs(row["orientation"]) >= 1.47 and
-                          row["major_axis_length"] / row["minor_axis_length"] >= 2 and
-                          on_grooves)
+                          (row["minor_axis_length"] <= 27 and
+                          np.abs(row["orientation"]) >= 1.45 and
+                          row["extent"] >= 0.74 and
+                          row["major_axis_length"] / row["minor_axis_length"] >= 2.0 and
+                          on_grooves2)
                           )
 
             label_value = 1 + int(conditions)
@@ -145,5 +148,3 @@ def find_caged_nucleus(dataframe, video, grooves, filter_grooves):
         caged_video[frame_id, :, :] = labeled_image
 
     return caged_video
-
-
