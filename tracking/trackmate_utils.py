@@ -6,7 +6,7 @@ import pandas as pd
 from skimage import io
 
 
-def read_trackmate_xml(trackmate_xml_path, get_tracks=False):
+def read_trackmate_xml(trackmate_xml_path, get_tracks=False, get_edges=False):
     """Import detected peaks with TrackMate Fiji plugin.
 
     Parameters
@@ -99,11 +99,11 @@ def read_trackmate_xml(trackmate_xml_path, get_tracks=False):
     tracks_ = pd.DataFrame(tracks, columns=features)
     tracks_ = tracks_.astype(float)
 
-    #tracks_ = tracks_.loc[:, track_labels.keys()]
-    #tracks_.columns = [track_labels[k] for k in track_labels.keys()]
+    # tracks_ = tracks_.loc[:, track_labels.keys()]
+    # tracks_.columns = [track_labels[k] for k in track_labels.keys()]
 
-    #trajs = trajs.loc[:, object_labels.keys()]
-    #trajs.columns = [object_labels[k] for k in object_labels.keys()]
+    # trajs = trajs.loc[:, object_labels.keys()]
+    # trajs.columns = [object_labels[k] for k in object_labels.keys()]
     trajs['label'] = np.arange(trajs.shape[0])
 
     # Get tracks
@@ -124,8 +124,24 @@ def read_trackmate_xml(trackmate_xml_path, get_tracks=False):
                 spot_ids = np.array(spot_ids).astype('float')[:, :2]
                 spot_ids = set(spot_ids.flatten())
 
-                trajs.loc[trajs["ID"].isin(spot_ids), "label"] = label_id
+                trajs.loc[trajs["ID"].isin(spot_ids), "label"] = track_id
                 label_id += 1
+
+    if get_edges:
+        edge_features = root.find('Model').find('FeatureDeclarations').find('EdgeFeatures')
+        edge_features = [c.get('feature') for c in list(edge_features)]
+        all_tracks = root.find('Model').find('AllTracks')
+        edges = []
+        for track in all_tracks.findall('Track'):
+            for frame in track.findall("Edge"):
+                single_object = []
+                for label in edge_features:
+                    single_object.append(frame.get(label))
+                edges.append(single_object)
+        edges_ = pd.DataFrame(edges, columns=edge_features)
+        edges_ = edges_.astype(float)
+
+        return trajs, tracks_, edges_
 
     return trajs, tracks_
 
@@ -138,14 +154,54 @@ def add_caged_feature(row, image):
     return pixel_value
 
 
+def post_process_caging(row, df):
+    if row['caged'] == 127.0 and (df['caged'].shift(1)[row.name] == 255.0 and df['caged'].shift(-1)[row.name] == 255.0):
+        if (abs(df['ELLIPSE_MINOR'].shift(-1)[row.name] - row['ELLIPSE_MINOR']) < 1
+                and abs(df['ELLIPSE_MINOR'].shift(1)[row.name] - row['ELLIPSE_MINOR']) < 1):
+            return 255
+        else:
+            return 127
+    elif (
+            row['caged'] == 255
+            and df['caged'].shift(1)[row.name] == 127
+            and df['caged'].shift(2)[row.name] == 127
+            and df['caged'].shift(-1)[row.name] == 127
+            and df['caged'].shift(-2)[row.name] == 127
+        ) or (
+            row['caged'] == 255
+            and df['caged'].shift(1)[row.name] == 127.0
+            and df['caged'].shift(-2)[row.name] == 127.0
+            and df['caged'].shift(-1)[row.name] == 127.0
+            and np.isnan(df['caged'].shift(2)[row.name])):
+        return 127
+    else:
+        return row["caged"]
+
+
 def remove_outlier_tracks_and_spots(tracks, spots):
-    duration_filtered_tracks = tracks[tracks['TRACK_DURATION'] >= 3]
-    distance_filtered_tracks = duration_filtered_tracks[duration_filtered_tracks['TOTAL_DISTANCE_TRAVELED'] >= 80]
-    filtered_spot_ids = distance_filtered_tracks['TRACK_ID'].unique()
+    filtered_tracks = tracks[
+        (tracks['TRACK_DURATION'] >= 10) &
+        (tracks['TOTAL_DISTANCE_TRAVELED'] >= 100) &
+        (2030 >= tracks['TRACK_Y_LOCATION']) &
+        (tracks['TRACK_Y_LOCATION'] >= 10) &
+        (tracks['NUMBER_GAPS'] <= 3) &
+        (tracks['NUMBER_SPLITS'] <= 1) &
+        (tracks['NUMBER_MERGES'] <= 1) &
+        (tracks['MAX_DISTANCE_TRAVELED'] >= 100)
+        ]
+
+    filtered_spot_ids = filtered_tracks['TRACK_ID'].unique()
+
     # Filter the spots DataFrame based on the 'label' column
     filtered_spots = spots[spots['label'].isin(filtered_spot_ids)]
-
-    return distance_filtered_tracks, filtered_spots
+    filtered_spots = filtered_spots.groupby('label').apply(lambda group: group.sort_values(by='FRAME')).reset_index(
+        drop=True)
+    for track in filtered_spots["label"].unique():
+        track_mask = filtered_spots["label"] == track
+        updated_values = filtered_spots[track_mask].apply(
+            lambda row: post_process_caging(row, filtered_spots[track_mask]), axis=1)
+        filtered_spots.loc[track_mask, 'caged'] = updated_values
+    return filtered_tracks, filtered_spots
 
 
 def spots_preprocessing(spots, image):

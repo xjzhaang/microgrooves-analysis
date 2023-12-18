@@ -1,6 +1,6 @@
 import numpy as np
 
-from skimage import transform, exposure, restoration
+from skimage import transform, exposure, restoration, feature
 from structure_tensor import eig_special_2d, structure_tensor_2d
 from tqdm import tqdm
 import torch
@@ -8,7 +8,7 @@ from monai.inferers import sliding_window_inference
 from monai.transforms import AsDiscrete, Compose
 
 
-def detect_and_rotate_angle(video_frames, rho, sigma, num_frames_for_angle=4):
+def detect_and_rotate_angle(video_frames, use_structure_tensor=False, num_frames_for_angle=5):
     """
     Detects the rotation angle of a video based on Hough line transform
     from a subset of frames and rotates all frames accordingly.
@@ -26,7 +26,7 @@ def detect_and_rotate_angle(video_frames, rho, sigma, num_frames_for_angle=4):
         frames_for_angle = video_frames[:num_frames_for_angle, 0, :, :]
     else:
         frames_for_angle = video_frames[:num_frames_for_angle]
-    average_angle = compute_average_angle(frames_for_angle, rho, sigma)
+    average_angle = compute_average_angle(frames_for_angle, use_structure_tensor)
     rotated_frames = np.zeros_like(video_frames)
 
     for idx, frame in enumerate(video_frames):
@@ -41,42 +41,52 @@ def detect_and_rotate_angle(video_frames, rho, sigma, num_frames_for_angle=4):
     return rotated_frames
 
 
-def angle_from_orientation(orientation):
+def angle_from_orientation(orientation, use_structure_tensor=False):
     """
-    Calculate the mean angle considering special cases.
+    Calculate the angle considering special cases.
 
     Parameters:
     - orientation (float): The orientation angle.
 
     Returns:
-    - float: The mean angle.
+    - float: The angle.
     """
     # Ensure orientation is in the range [0, 180)
     orientation = orientation % 180
 
-    # Define a threshold for considering special cases
-    threshold = 0.5  # You can adjust this threshold as needed
     angle = 0
-    if abs(orientation) < threshold or abs(orientation - 180) < threshold:
-        angle = 90
-    elif abs(orientation - 90) < threshold:
-        angle = 0
+    if use_structure_tensor:
+        threshold = 0.5  # You can adjust this threshold as needed
+        if abs(orientation) < threshold or abs(orientation - 180) < threshold:
+            angle = 90
+        elif abs(orientation - 90) < threshold:
+            angle = 0
+        else:
+            if 0 <= orientation < 90:
+                if orientation >= 45:
+                    angle = 90 - orientation
+                else:
+                    angle = -orientation + 90
+            elif 90 <= orientation < 180:
+                if orientation >= 135:
+                    angle = 270 - orientation
+                else:
+                    angle = 90 - orientation
     else:
-        # Calculate the mean angle for other cases
         if 0 <= orientation < 90:
             if orientation >= 45:
-                angle = 90 - orientation
+                angle = orientation - 90
             else:
-                angle = -orientation + 90
+                angle = orientation + 90
         elif 90 <= orientation < 180:
             if orientation >= 135:
-                angle = 270 - orientation
+                angle = orientation + 90
             else:
-                angle = 90 - orientation
+                angle = orientation - 90
     return angle
 
 
-def compute_average_angle(frames, sigma, rho):
+def compute_average_angle(frames, use_structure_tensor=False):
     """
     Computes the average rotation angle based on Hough line transform.
     Then rotates the image to have horizontal grooves based on structure tensor orientation.
@@ -85,19 +95,28 @@ def compute_average_angle(frames, sigma, rho):
     - frames: NumPy array representing the frames with shape (num_frames, x, y).
 
     Returns:
-    - average_angle: The average rotation angle.
+    - final_angle: The average rotation angle.
     """
 
     angles = []
+
     for frame in frames:
-        a = structure_tensor_2d(frame.astype(np.float32), sigma=sigma, rho=rho)
-        val, vec = eig_special_2d(a)
-        ori = np.arctan2(vec[1], vec[0])
-        median_ori = np.rad2deg(np.median(ori))
-        angles.append(median_ori)
+        if use_structure_tensor:
+            a = structure_tensor_2d(frame.astype(np.float32), sigma=7, rho=28)
+            val, vec = eig_special_2d(a)
+            ori = np.arctan2(vec[1], vec[0])
+            median_ori = np.rad2deg(np.median(ori))
+            angles.append(median_ori)
+        else:
+            edges = feature.canny(frame, sigma=2)
+            h, theta, d = transform.hough_line(edges)
+            hspace, hu_angle, dists = transform.hough_line_peaks(h, theta, d, num_peaks=60)
+            orientation_rad = np.median(hu_angle)
+            orientation_deg = np.rad2deg(orientation_rad)
+            angles.append(orientation_deg)
 
     orientation = np.mean(angles)
-    final_angle = angle_from_orientation(orientation)
+    final_angle = angle_from_orientation(orientation, use_structure_tensor=use_structure_tensor)
 
     print(orientation, final_angle)
 
@@ -164,8 +183,7 @@ def apply_clahe(image, clip_limit=0.01, channel_to_process=1, clahe_kernel_size=
         clahe_result = np.copy(image)
         for t in tqdm(range(image.shape[0])):
             # rescaled = exposure.adjust_log(image[t, channel_to_process], 1)
-            clahe_res = exposure.equalize_adapthist(image[t, channel_to_process], clip_limit=clip_limit, kernel_size=(
-            image.shape[2] // clahe_kernel_size, image.shape[3] // clahe_kernel_size))
+            clahe_res = exposure.equalize_adapthist(image[t, channel_to_process], clip_limit=clip_limit, kernel_size=(40, 40))
             clahe_result[t, channel_to_process] = clahe_res
             del clahe_res
 
@@ -217,7 +235,8 @@ def apply_intensity_clipping(image, clip_percentile=1.5, channel_to_process=1):
 
     return processed_image
 
-def apply_denoising(image, weight=0.1, channel_to_process=1):
+
+def apply_denoising(image, weight=0.02, channel_to_process=1):
     """
     Apply intensity clipping and total variation denoising to a 3D or 4D image.
 

@@ -50,14 +50,14 @@ settings.detectorSettings = {{
 }}
 settings.trackerFactory = AdvancedKalmanTrackerFactory()
 settings.trackerSettings = settings.trackerFactory.getDefaultSettings()  # almost good enough
-settings.trackerSettings['ALLOW_TRACK_SPLITTING'] = True
-settings.trackerSettings['ALLOW_TRACK_MERGING'] = True
-settings.trackerSettings['GAP_CLOSING_MAX_DISTANCE'] = 25.0
-settings.trackerSettings['SPLITTING_MAX_DISTANCE'] = 25.0
-settings.trackerSettings['MERGING_MAX_DISTANCE'] = 25.0
+settings.trackerSettings['ALLOW_TRACK_SPLITTING'] = False
+settings.trackerSettings['ALLOW_TRACK_MERGING'] = False
+# settings.trackerSettings['GAP_CLOSING_MAX_DISTANCE'] = 30.0
+settings.trackerSettings['SPLITTING_MAX_DISTANCE'] = 30.0
+settings.trackerSettings['MERGING_MAX_DISTANCE'] = 30.0
 settings.trackerSettings['LINKING_MAX_DISTANCE'] = 50.0
-settings.trackerSettings['KALMAN_SEARCH_RADIUS'] = 60.0
-settings.trackerSettings['MAX_FRAME_GAP'] = 1
+settings.trackerSettings['KALMAN_SEARCH_RADIUS'] = 100.0
+settings.trackerSettings['MAX_FRAME_GAP'] = 2
 settings.addAllAnalyzers()
 trackmate = TrackMate(model, settings)
 ok = trackmate.checkInput()
