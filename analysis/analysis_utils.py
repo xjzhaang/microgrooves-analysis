@@ -37,14 +37,16 @@ def analyze_caging(spots, label):
     min_true_length = min(true_lengths) if true_lengths else 0
     max_true_length = max(true_lengths) if true_lengths else 0
     avg_true_length = sum(true_lengths) / len(true_lengths) if true_lengths else 0
+    tot_true_length = sum(true_lengths) if true_lengths else 0
 
     # Calculate min, max, and average for false groups
     min_false_length = min(false_lengths) if false_lengths else 0
     max_false_length = max(false_lengths) if false_lengths else 0
     avg_false_length = sum(false_lengths) / len(false_lengths) if false_lengths else 0
+    tot_false_length = sum(false_lengths) if false_lengths else 0
 
-    return (true_count, min_true_length, max_true_length, avg_true_length,
-            false_count, min_false_length, max_false_length, avg_false_length)
+    return (true_count, min_true_length, max_true_length, avg_true_length, tot_true_length,
+            false_count, min_false_length, max_false_length, avg_false_length, tot_false_length)
 
 
 def analyze_area(spots, label):
@@ -197,8 +199,8 @@ def analyze_data(spots, tracks, edges):
 
     # compute caging period and area data
     for label in filtered_spots["label"].unique():
-        (true_count, min_true_length, max_true_length, avg_true_length,
-         false_count, min_false_length, max_false_length, avg_false_length) = analyze_caging(filtered_spots, label)
+        (true_count, min_true_length, max_true_length, avg_true_length, tot_true_length,
+         false_count, min_false_length, max_false_length, avg_false_length, tot_false_length) = analyze_caging(filtered_spots, label)
         average_area_caged, average_area_uncaged = analyze_area(filtered_spots, label)
         track_features.at[label, "number_of_caging"] = int(true_count)
         track_features.at[label, "total_period"] = int(
@@ -206,9 +208,11 @@ def analyze_data(spots, tracks, edges):
         track_features.at[label, "min_caging_period"] = min_true_length
         track_features.at[label, "max_caging_period"] = max_true_length
         track_features.at[label, "avg_caging_period"] = avg_true_length
+        track_features.at[label, "tot_caging_period"] = tot_true_length
         track_features.at[label, "min_uncaging_period"] = min_false_length
         track_features.at[label, "max_uncaging_period"] = max_false_length
         track_features.at[label, "avg_uncaging_period"] = avg_false_length
+        track_features.at[label, "tot_uncaging_period"] = tot_false_length
         track_features.at[label, "average_area_caged"] = average_area_caged
         track_features.at[label, "average_area_uncaged"] = average_area_uncaged
 
