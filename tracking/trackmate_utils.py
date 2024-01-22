@@ -1,4 +1,5 @@
 # Code for function read_trackmate_xml adapted from https://github.com/hadim/pytrackmate
+import executing.executing
 import numpy as np
 
 import xml.etree.ElementTree as et
@@ -156,13 +157,19 @@ def add_caged_feature(row, image):
 
 def post_process_caging(row, df):
     if row['caged'] == 127.0 and (df['caged'].shift(1)[row.name] == 255.0 and df['caged'].shift(-1)[row.name] == 255.0):
-        if (abs(df['ELLIPSE_MINOR'].shift(-1)[row.name] - row['ELLIPSE_MINOR']) < 1
-                and abs(df['ELLIPSE_MINOR'].shift(1)[row.name] - row['ELLIPSE_MINOR']) < 1):
+        if (abs(df['POSITION_Y'].shift(-1)[row.name] - row['POSITION_Y']) < 5
+                and abs(df['POSITION_Y'].shift(1)[row.name] - row['POSITION_Y']) < 5):
             return 255
         else:
             return 127
-    elif (
-            row['caged'] == 255
+
+    elif row['caged'] == 127.0 and (np.isnan(df['caged'].shift(1)[row.name]) and df['caged'].shift(-1)[row.name] == 255.0 and df['caged'].shift(-2)[row.name] == 255.0):
+        if abs(df['POSITION_Y'].shift(-1)[row.name] - row['POSITION_Y']) < 5:
+            return 255
+        else:
+            return 127
+
+    elif (row['caged'] == 255
             and df['caged'].shift(1)[row.name] == 127
             and df['caged'].shift(2)[row.name] == 127
             and df['caged'].shift(-1)[row.name] == 127
@@ -172,10 +179,29 @@ def post_process_caging(row, df):
             and df['caged'].shift(1)[row.name] == 127.0
             and df['caged'].shift(-2)[row.name] == 127.0
             and df['caged'].shift(-1)[row.name] == 127.0
-            and np.isnan(df['caged'].shift(2)[row.name])):
+            and np.isnan(df['caged'].shift(2)[row.name])
+         ) or (
+            row['caged'] == 255
+            and np.isnan(df['caged'].shift(1)[row.name])
+            and df['caged'].shift(-1)[row.name] == 127.0):
         return 127
+
+    elif np.isnan(df['caged'].shift(-1)[row.name]):
+        if row['caged'] == 255 and df['caged'].shift(1)[row.name] == 127.0:
+            return 127
+        elif row['caged'] == 127 and df['caged'].shift(1)[row.name] == 255.0:
+            return 255
+        else:
+            return row['caged']
     else:
         return row["caged"]
+
+def post_process_caging1(row, df):
+    if np.isnan(df['caged'].shift(1)[row.name]):
+        if row['caged'] == 255 and df['caged'].shift(-1)[row.name] == 127.0:
+            print(row["FRAME"], df['FRAME'].shift(-1)[row.name])
+            print(df.head(6))
+    return row["caged"]
 
 
 def remove_outlier_tracks_and_spots(tracks, spots):
@@ -201,6 +227,13 @@ def remove_outlier_tracks_and_spots(tracks, spots):
         updated_values = filtered_spots[track_mask].apply(
             lambda row: post_process_caging(row, filtered_spots[track_mask]), axis=1)
         filtered_spots.loc[track_mask, 'caged'] = updated_values
+
+    # for track in filtered_spots["label"].unique():
+    #     track_mask = filtered_spots["label"] == track
+    #     updated_values1 = filtered_spots[track_mask].apply(
+    #         lambda row: post_process_caging1(row, filtered_spots[track_mask]), axis=1)
+    #     filtered_spots.loc[track_mask, 'caged'] = updated_values1
+
     return filtered_tracks, filtered_spots
 
 

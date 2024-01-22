@@ -3,6 +3,7 @@ import numpy as np
 from pathlib import Path
 
 import torch
+import imageio
 from skimage import io
 from preprocessing.preprocess import preprocess_image
 from segmentation.segment import segment_cells
@@ -92,8 +93,10 @@ def analyze_xml(directory_path):
     analysis_directory.mkdir(exist_ok=True)
     xml_list = list(trackings_directory.glob('*filtered.xml'))
     for xml_file in xml_list:
-        read_and_analyze(xml_file)
+        fps = imageio.v3.immeta(str(directory_path) + "/" + str(xml_file.name).replace("filtered.xml", "tif"))['finterval']
+        read_and_analyze(xml_file, fps)
         print(f"Analyzed {xml_file} and saved to csv!")
+
 
 def select_segmentation_samples(directory_path):
     preprocessed_directory = Path('./output') / directory_path.relative_to('../data') / 'preprocessed'
@@ -152,19 +155,24 @@ def main():
         directories = {
             # # '../data/preprocessing_test': True,
             '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J1 6h culture': True,
-            '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J2 24h culture': True,
             '../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J1 6h culture': True,
-            '../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J2 24h culture': True,
             '../data/220208 Film myoblastes WT K32 5-5-5/J1 6h culture': True,
-            '../data/220208 Film myoblastes WT K32 5-5-5/J2 24h culture': True,
             '../data/200121 hoechst': True,
             '../data/191219 HOECHST 3D 5-5': True,
             '../data/191015 HOECHST 3D 5-5': True,
-            '../data/200911 Diff density and BB': True,
-            '../data/200916 Diff densities h4,5': True,
-            '../data/210910 Grooves dapi 48h': False,
-            '../data/231003 HUVEC grooves h5,2 CellMask Dapi': False,
-            '../data/231005 Grooves h5,4 CellMask Dapi': False,
+
+            # '../data/220127 Film Myoblastes WT - K32 tranchees 5-5-5/J2 24h culture': True,
+            # '../data/220202 Film Myoblastes WT-K32 Tr 5-5-5/J2 24h culture': True,
+            # '../data/220208 Film myoblastes WT K32 5-5-5/J2 24h culture': True,
+            #'../data/200911 Diff density and BB': True,
+            #'../data/200916 Diff densities h4,5': True,
+            #'../data/210910 Grooves dapi 48h': False,
+            #'../data/231003 HUVEC grooves h5,2 CellMask Dapi': False,
+            #'../data/231005 Grooves h5,4 CellMask Dapi': False,
+            '../data/First Half HUVEC': True,
+            '../data/Second Half HUVEC': True,
+            '../data/First Half Myoblast': True,
+            '../data/Second Half Myoblast': True,
         }
     else:
         directories = {args.d: args.grooves}
